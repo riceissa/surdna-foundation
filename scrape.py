@@ -13,7 +13,7 @@ def main():
         sys.exit()
 
     url_base = "https://surdna.org/grants-database/{}/"
-    page = 1
+    page = 24
 
     with open(sys.argv[1], "w", newline="") as f:
         fieldnames = ["organization", "organization_url", "project_summary",
@@ -26,8 +26,11 @@ def main():
             r = requests.get(url)
             soup = BeautifulSoup(r.content, "lxml")
 
+            if soup.body.find_all(text="No Results Found"):
+                break
+
             tables = soup.find_all("table")
-            assert len(tables) == 1, "Error: there must be exactly one grants table on the page"
+            # assert len(tables) == 1, "Error: there must be exactly one grants table on the page"
             table = tables[0]
 
             headers_found = list(map(lambda x: x.text.strip(), table.find_all("th")))
@@ -38,8 +41,14 @@ def main():
             # cells[idx]
             h = {key: idx for idx, key in enumerate(headers_expected)}
 
-            for row in table.find("tbody").find_all("tr"):
-                cells = row.find_all("td")
+            # The Surdna Foundation website has a strange bug on page 24 where
+            # one cell has a nested table in it, which messes up a naive
+            # iteration using find_all("tr"). So instead we loop through the
+            # children and filter for "tr" tags to get the rows.
+            for child in table.find("tbody").children:
+                if child.name != "tr":
+                    continue
+                cells = list(filter(lambda t: t.name == "td", child.children))
                 year_approved = cells[h["Year Approved"]].text.strip()
                 status = cells[h["Status"]].text.strip()
                 amount = cells[h["Amount"]].text.strip()
