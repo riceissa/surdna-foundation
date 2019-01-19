@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import pdb
-
 import csv
 import requests
 import sys
@@ -13,7 +11,7 @@ def main():
         sys.exit()
 
     url_base = "https://surdna.org/grants-database/{}/"
-    page = 24
+    page = 1
 
     with open(sys.argv[1], "w", newline="") as f:
         fieldnames = ["organization", "organization_url", "project_summary",
@@ -30,6 +28,9 @@ def main():
                 break
 
             tables = soup.find_all("table")
+            # See comment below -- Surdna Foundation website has a bug where a
+            # nested table appears in one of the pages, so this assertion
+            # fails.
             # assert len(tables) == 1, "Error: there must be exactly one grants table on the page"
             table = tables[0]
 
